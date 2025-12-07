@@ -5,7 +5,7 @@ const TelegramBot = require('node-telegram-bot-api');
 const axios = require('axios');
 
 // =========================
-// FUNCION PARA DIVIDIR MENSAJES LARGOS
+// FUNCIÓN PARA DIVIDIR MENSAJES LARGOS
 // =========================
 function dividirMensaje(texto) {
   const limite = 3900; // Telegram permite 4096, dejamos margen
@@ -23,8 +23,7 @@ function dividirMensaje(texto) {
 // =========================
 // MAPA DE CARTAS -> URL DE IMAGEN
 // =========================
-// Aquí ponemos solo un mapa simple: NOMBRE EN MAYÚSCULAS -> URL
-// Puedes agregar más cartas cuando quieras.
+// Usa SOLO nombre en mayúsculas -> URL de Cloudinary
 const cartaImagenes = {
   'EL LOCO': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111839/el_loco_vgxwfw.png',
   'LA MAGA': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111857/la_maga_gthzro.png',
@@ -36,11 +35,13 @@ const cartaImagenes = {
   'EL CARRO': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111865/el_carro_rgdw1l.png',
   'LA JUSTICIA': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111864/la_justicia_qbqaw0.png',
   'LA ERMITAÑA': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111847/la_ermitana_hmcnrx.png',
-  'LA RUEDA DE LA FORTUNA': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111839/la_rueda_de_la_fortuna_m3eesx.png',
+  'LA RUEDA DE LA FORTUNA':
+    'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111839/la_rueda_de_la_fortuna_m3eesx.png',
   'LA FUERZA': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111852/la_fuerza_fvo6iq.png',
   'EL COLGADO': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111838/el_colgado_nwsvbp.png',
   'LA MUERTE': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111852/la_muerte_wxdpfv.png',
-  'LA TEMPLANZA': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764112559/ChatGPT_Image_25_nov_2025_08_15_26_p.m._biavuj.png',
+  'LA TEMPLANZA':
+    'https://res.cloudinary.com/dy3hsvova/image/upload/v1764112559/ChatGPT_Image_25_nov_2025_08_15_26_p.m._biavuj.png',
   'EL DIABLO': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111863/el_diablo_uutxcj.png',
   'LA TORRE': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111875/la_torre_nns9wj.png',
   'LA ESTRELLA': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111870/la_estrella_n38omw.png',
@@ -48,7 +49,7 @@ const cartaImagenes = {
   'EL SOL': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111852/el_sol_yqusqp.png',
   'EL JUICIO': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111844/el_juicio_prfz0b.png',
   'EL MUNDO': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111872/el_mundo_lte7rj.png'
-  // Aquí podrías seguir con arcanos menores si quieres.
+  // Aquí podrías seguir añadiendo Arcanos Menores si quieres
 };
 
 // =========================
@@ -112,7 +113,7 @@ const bot = new TelegramBot(TELEGRAM_TOKEN, { polling: true });
 const VF_BASE_URL = 'https://general-runtime.voiceflow.com/state';
 
 // =========================
-– PROCESAR LAS TRACES DE VOICEFLOW
+// ENVIAR TEXTO A VOICEFLOW
 // =========================
 async function sendToVoiceflow(userId, text) {
   const url = `${VF_BASE_URL}/${VOICEFLOW_VERSION_ID}/user/${userId}/interact`;
@@ -140,9 +141,8 @@ async function sendToVoiceflow(userId, text) {
 }
 
 // =========================
-// ENVIAR TEXTO A VOICEFLOW
+// PROCESAR LAS TRACES DE VOICEFLOW
 // =========================
-
 async function handleVoiceflowTraces(chatId, traces) {
   for (const trace of traces) {
     try {
@@ -156,13 +156,9 @@ async function handleVoiceflowTraces(chatId, traces) {
         if (message) {
           await procesarYEnviarMensaje(message, chatId);
         }
-
-        // Si quisieras usar imágenes que vengan de Voiceflow:
-        // } else if (trace.type === 'visual' && trace.payload?.image) {
-        //   await bot.sendPhoto(chatId, trace.payload.image);
-
+        // Si quieres seguir usando imágenes que vengan de Voiceflow, podrías manejar trace.type === 'visual' aquí.
       } else if (trace.type === 'end') {
-        // Trace de fin de conversación (opcional)
+        // Opcional: mensaje de cierre
         // await bot.sendMessage(chatId, "🌙 Gracias por conectar con Luna Esmeralda. Vuelve cuando lo sientas.");
       }
     } catch (err) {
