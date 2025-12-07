@@ -23,12 +23,32 @@ function dividirMensaje(texto) {
 // =========================
 // MAPA DE CARTAS -> URL DE IMAGEN
 // =========================
-// ⚠️ REEMPLAZA LAS URLS "https://TU_SERVIDOR/..." POR LAS REALES
-const cartaImagenes = {{ "deck_name": "Luna Esmeralda - Arcanos Mayores", "reverso": "https://res.cloudinary.com/dy3hsvova/image/upload/v1764111858/reverso_juzham.png", "arcanos_mayores": [ {"nombre": "El Loco","url": "https://res.cloudinary.com/dy3hsvova/image/upload/v1764111839/el_loco_vgxwfw.png"}, {"nombre": "La Maga","url": "https://res.cloudinary.com/dy3hsvova/image/upload/v1764111857/la_maga_gthzro.png"}, {"nombre": "La Sacerdotisa","url": "https://res.cloudinary.com/dy3hsvova/image/upload/v1764111845/la_sacerdotisa_ludvqz.png"}, {"nombre": "La Emperatriz","url": "https://res.cloudinary.com/dy3hsvova/image/upload/v1764111839/la_emperatriz_rfyw1l.png"}, {"nombre": "El Emperador","url": "https://res.cloudinary.com/dy3hsvova/image/upload/v1764111869/el_emperador_zg0wp2.png"}, {"nombre": "El Hierofrante","url": "https://res.cloudinary.com/dy3hsvova/image/upload/v1764111868/el_hierofrante_jeccsv.png"}, {"nombre": "Los Enamorados","url": "https://res.cloudinary.com/dy3hsvova/image/upload/v1764111847/los_enamorados_u5gwdp.png"}, {"nombre": "El Carro","url": "https://res.cloudinary.com/dy3hsvova/image/upload/v1764111865/el_carro_rgdw1l.png"}, {"nombre": "La Justicia","url": "https://res.cloudinary.com/dy3hsvova/image/upload/v1764111864/la_justicia_qbqaw0.png"}, {"nombre": "La Ermitaña","url": "https://res.cloudinary.com/dy3hsvova/image/upload/v1764111847/la_ermitana_hmcnrx.png"}, {"nombre": "La Rueda de la Fortuna","url": "https://res.cloudinary.com/dy3hsvova/image/upload/v17641 11839/la_rueda_de_la_fortuna_m3eesx.png"}, {"nombre": "La Fuerza","url": "https://res.cloudinary.com/dy3hsvova/image/upload/v1764111852/la_fuerza_fvo6iq.png"}, {"nombre": "El Colgado","url": "https://res.cloudinary.com/dy3hsvova/image/upload/v1764111838/el_colgado_nwsvbp.png"}, {"nombre": "La Muerte","url": "https://res.cloudinary.com/dy3hsvova/image/upload/v1764111852/la_muerte_wxdpfv.png"}, {"nombre": "La Templanza","url": "https://res.cloudinary.com/dy3hsvova/image/upload/v1764112559/C hatGPT_Image_25_nov_2025_08_15_26_p.m._biavuj.png"}, {"nombre": "El Diablo","url": "https://res.cloudinary.com/dy3hsvova/image/upload/v1764111863/el_diablo_uutxcj.png"}, {"nombre": "La Torre","url": "https://res.cloudinary.com/dy3hsvova/image/upload/v1764111875/la_torre_nns9wj.png"}, {"nombre": "La Estrella","url": "https://res.cloudinary.com/dy3hsvova/image/upload/v1764111870/la_estrella_n38omw.png"}, {"nombre": "La Luna","url": "https://res.cloudinary.com/dy3hsvova/image/upload/v1764111847/la_luna_xraqpd.png"}, {"nombre": "El Sol","url":
-
-"https://res.cloudinary.com/dy3hsvova/image/upload/v1764111852/el_sol_yqusqp.png"}, {"nombre": "El Juicio","url": "https://res.cloudinary.com/dy3hsvova/image/upload/v1764111844/el_juicio_prfz0b.png"}, {"nombre": "El Mundo","url": "https://res.cloudinary.com/dy3hsvova/image/upload/v1764111872/el_mundo_lte7rj.png"} ] }
-  
-  // Puedes seguir agregando Arcanos Menores si quieres
+// Aquí ponemos solo un mapa simple: NOMBRE EN MAYÚSCULAS -> URL
+// Puedes agregar más cartas cuando quieras.
+const cartaImagenes = {
+  'EL LOCO': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111839/el_loco_vgxwfw.png',
+  'LA MAGA': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111857/la_maga_gthzro.png',
+  'LA SACERDOTISA': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111845/la_sacerdotisa_ludvqz.png',
+  'LA EMPERATRIZ': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111839/la_emperatriz_rfyw1l.png',
+  'EL EMPERADOR': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111869/el_emperador_zg0wp2.png',
+  'EL HIEROFRANTE': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111868/el_hierofrante_jeccsv.png',
+  'LOS ENAMORADOS': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111847/los_enamorados_u5gwdp.png',
+  'EL CARRO': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111865/el_carro_rgdw1l.png',
+  'LA JUSTICIA': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111864/la_justicia_qbqaw0.png',
+  'LA ERMITAÑA': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111847/la_ermitana_hmcnrx.png',
+  'LA RUEDA DE LA FORTUNA': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111839/la_rueda_de_la_fortuna_m3eesx.png',
+  'LA FUERZA': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111852/la_fuerza_fvo6iq.png',
+  'EL COLGADO': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111838/el_colgado_nwsvbp.png',
+  'LA MUERTE': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111852/la_muerte_wxdpfv.png',
+  'LA TEMPLANZA': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764112559/ChatGPT_Image_25_nov_2025_08_15_26_p.m._biavuj.png',
+  'EL DIABLO': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111863/el_diablo_uutxcj.png',
+  'LA TORRE': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111875/la_torre_nns9wj.png',
+  'LA ESTRELLA': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111870/la_estrella_n38omw.png',
+  'LA LUNA': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111847/la_luna_xraqpd.png',
+  'EL SOL': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111852/el_sol_yqusqp.png',
+  'EL JUICIO': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111844/el_juicio_prfz0b.png',
+  'EL MUNDO': 'https://res.cloudinary.com/dy3hsvova/image/upload/v1764111872/el_mundo_lte7rj.png'
+  // Aquí podrías seguir con arcanos menores si quieres.
 };
 
 // =========================
@@ -92,7 +112,7 @@ const bot = new TelegramBot(TELEGRAM_TOKEN, { polling: true });
 const VF_BASE_URL = 'https://general-runtime.voiceflow.com/state';
 
 // =========================
-// ENVIAR TEXTO A VOICEFLOW
+– PROCESAR LAS TRACES DE VOICEFLOW
 // =========================
 async function sendToVoiceflow(userId, text) {
   const url = `${VF_BASE_URL}/${VOICEFLOW_VERSION_ID}/user/${userId}/interact`;
@@ -120,7 +140,7 @@ async function sendToVoiceflow(userId, text) {
 }
 
 // =========================
-– PROCESAR LAS TRACES DE VOICEFLOW
+// PROCESAR LAS TRACES DE VOICEFLOW
 // =========================
 async function handleVoiceflowTraces(chatId, traces) {
   for (const trace of traces) {
@@ -130,25 +150,20 @@ async function handleVoiceflowTraces(chatId, traces) {
         if (message) {
           await procesarYEnviarMensaje(message, chatId);
         }
-
       } else if (trace.type === 'speak') {
         const message = trace.payload?.message;
         if (message) {
           await procesarYEnviarMensaje(message, chatId);
         }
 
-      // Si quieres seguir usando imágenes que vengan de Voiceflow, descomenta esto.
-      // Pero como ahora controlamos las imágenes con [IMAGEN: ...], mejor dejarlo apagado.
-      //
-      // } else if (trace.type === 'visual' && trace.payload?.image) {
-      //   await bot.sendPhoto(chatId, trace.payload.image);
+        // Si quisieras usar imágenes que vengan de Voiceflow:
+        // } else if (trace.type === 'visual' && trace.payload?.image) {
+        //   await bot.sendPhoto(chatId, trace.payload.image);
 
       } else if (trace.type === 'end') {
         // Trace de fin de conversación (opcional)
-        // Puedes mandar un mensaje de cierre aquí si quieres.
         // await bot.sendMessage(chatId, "🌙 Gracias por conectar con Luna Esmeralda. Vuelve cuando lo sientas.");
       }
-
     } catch (err) {
       console.error('Error enviando mensaje a Telegram:', err.message);
     }
@@ -166,19 +181,14 @@ bot.on('message', async (msg) => {
 
   if (msg.text) {
     userText = msg.text;
-
   } else if (msg.photo && msg.photo.length > 0) {
     userText = 'te envío una foto de comprobante';
-
   } else if (msg.document) {
     userText = 'te envío un archivo de comprobante';
-
   } else if (msg.sticker) {
     userText = 'sticker enviado';
-
   } else if (msg.voice || msg.audio) {
     userText = 'nota de voz enviada';
-
   } else {
     userText = 'contenido enviado';
   }
