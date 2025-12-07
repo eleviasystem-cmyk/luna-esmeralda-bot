@@ -140,8 +140,9 @@ async function sendToVoiceflow(userId, text) {
 }
 
 // =========================
-// PROCESAR LAS TRACES DE VOICEFLOW
+// ENVIAR TEXTO A VOICEFLOW
 // =========================
+
 async function handleVoiceflowTraces(chatId, traces) {
   for (const trace of traces) {
     try {
