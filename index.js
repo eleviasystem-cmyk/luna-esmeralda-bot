@@ -4,23 +4,42 @@ require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
 const axios = require('axios');
 
-// Lee variables de entorno
+// =========================
+// FUNCION PARA DIVIDIR MENSAJES LARGOS
+// =========================
+function dividirMensaje(texto) {
+  const limite = 3900; // Telegram permite 4096 — dejamos margen
+  const partes = [];
+
+  for (let i = 0; i < texto.length; i += limite) {
+    partes.push(texto.substring(i, i + limite));
+  }
+  return partes;
+}
+
+// =========================
+// VARIABLES DE ENTORNO
+// =========================
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const VOICEFLOW_API_KEY = process.env.VOICEFLOW_API_KEY;
-const VOICEFLOW_VERSION_ID = process.env.VOICEFLOW_VERSION_ID; // ID de la versión del proyecto en Voiceflow
+const VOICEFLOW_VERSION_ID = process.env.VOICEFLOW_VERSION_ID;
 
 if (!TELEGRAM_TOKEN || !VOICEFLOW_API_KEY || !VOICEFLOW_VERSION_ID) {
   console.error('❌ Faltan variables de entorno. Revisa TELEGRAM_BOT_TOKEN, VOICEFLOW_API_KEY y VOICEFLOW_VERSION_ID en tu .env');
   process.exit(1);
 }
 
-// Inicializa el bot de Telegram con long polling
+// =========================
+// INICIALIZACIÓN DEL BOT
+// =========================
 const bot = new TelegramBot(TELEGRAM_TOKEN, { polling: true });
 
-// URL base de la API de Voiceflow (runtime)
+// Voiceflow runtime URL
 const VF_BASE_URL = 'https://general-runtime.voiceflow.com/state';
 
-// Función que envía un mensaje del usuario a Voiceflow
+// =========================
+// ENVIAR TEXTO A VOICEFLOW
+// =========================
 async function sendToVoiceflow(userId, text) {
   const url = `${VF_BASE_URL}/${VOICEFLOW_VERSION_ID}/user/${userId}/interact`;
 
@@ -28,14 +47,8 @@ async function sendToVoiceflow(userId, text) {
     const response = await axios.post(
       url,
       {
-        request: {
-          type: 'text',
-          payload: text
-        },
-        config: {
-          tts: false,
-          stripSSML: true
-        }
+        request: { type: 'text', payload: text },
+        config: { tts: false, stripSSML: true }
       },
       {
         headers: {
@@ -45,80 +58,79 @@ async function sendToVoiceflow(userId, text) {
       }
     );
 
-    return response.data; // traces de Voiceflow
+    return response.data;
   } catch (error) {
     console.error('Error hablando con Voiceflow:', error.response?.data || error.message);
     throw error;
   }
 }
 
-// Función que procesa las trazas que responde Voiceflow
+// =========================
+// PROCESAR RESPUESTA DE VOICEFLOW
+// =========================
 async function handleVoiceflowTraces(chatId, traces) {
-  // Cada "trace" es una acción en el flujo de Voiceflow (texto, speak, card, etc.)
   for (const trace of traces) {
     try {
+      let message = null;
+
       if (trace.type === 'text') {
-        // Mensajes de texto normales
-        const message = trace.payload?.message;
-        if (message) {
-          await bot.sendMessage(chatId, message, {
-            parse_mode: 'Markdown'
-          });
-        }
+        message = trace.payload?.message;
+
       } else if (trace.type === 'speak') {
-        // Algunos proyectos usan "speak" en vez de "text"
-        const message = trace.payload?.message;
-        if (message) {
-          await bot.sendMessage(chatId, message, {
+        message = trace.payload?.message;
+
+      } else if (trace.type === 'visual' && trace.payload?.image) {
+        await bot.sendPhoto(chatId, trace.payload.image);
+        continue;
+      }
+
+      // ---- ENVÍO DE MENSAJE DIVIDIDO ----
+      if (message && typeof message === 'string') {
+        const partes = dividirMensaje(message);
+
+        for (const parte of partes) {
+          await bot.sendMessage(chatId, parte, {
             parse_mode: 'Markdown'
           });
         }
-      } else if (trace.type === 'visual') {
-        // Si en algún momento usas imágenes en Voiceflow (opcionales)
-        if (trace.payload?.image) {
-          await bot.sendPhoto(chatId, trace.payload.image);
-        }
-      } else if (trace.type === 'end') {
-        // Fin de conversación (si lo usas en Voiceflow)
-        // Puedes decidir no hacer nada, o mandar un mensaje de cierre
-        // await bot.sendMessage(chatId, "🌙 Gracias por conectar con Luna Esmeralda. Vuelve cuando tu alma lo sienta.");
       }
+
     } catch (err) {
       console.error('Error enviando mensaje a Telegram:', err.message);
     }
   }
 }
 
-// Manejo de mensajes de Telegram
+// =========================
+// MANEJO DE MENSAJES DE TELEGRAM
+// =========================
 bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
-  const userId = String(chatId); // lo usamos como userId en Voiceflow
+  const userId = String(chatId);
 
-  // Detectar tipo de contenido
   let userText = '';
 
   if (msg.text) {
-    // Mensaje de texto normal
     userText = msg.text;
+
   } else if (msg.photo && msg.photo.length > 0) {
-    // Usuario envió una foto (puede ser comprobante)
-    // Enviamos un texto especial a Voiceflow para que IA Comprobante lo entienda
     userText = 'te envío una foto de comprobante';
+
   } else if (msg.document) {
-    // Usuario envió un archivo (PDF, imagen adjunta, etc.)
     userText = 'te envío un archivo de comprobante';
+
   } else if (msg.sticker) {
     userText = 'sticker enviado';
+
   } else if (msg.voice || msg.audio) {
     userText = 'nota de voz enviada';
+
   } else {
-    // Cualquier otro tipo
     userText = 'contenido enviado';
   }
 
   console.log(`👤 Usuario ${chatId} →`, userText);
 
-  // Escribe "escribiendo..." en el chat
   try {
     await bot.sendChatAction(chatId, 'typing');
   } catch (err) {
@@ -126,11 +138,9 @@ bot.on('message', async (msg) => {
   }
 
   try {
-    // Mandamos el mensaje del usuario a Voiceflow
     const traces = await sendToVoiceflow(userId, userText);
-
-    // Procesamos la respuesta de Voiceflow
     await handleVoiceflowTraces(chatId, traces);
+
   } catch (error) {
     await bot.sendMessage(
       chatId,
@@ -139,4 +149,7 @@ bot.on('message', async (msg) => {
   }
 });
 
+// =========================
+// BOT LISTO
+// =========================
 console.log('🌙 Luna Esmeralda Telegram Bot está corriendo...');
