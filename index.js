@@ -21,7 +21,7 @@ function dividirMensaje(texto) {
 }
 
 // =========================
-// MAPA DE CARTAS -> URL DE IMAGEN (NOMBRES EN MAYÚSCULAS)
+// MAPA DE CARTAS -> URL DE IMAGEN (MAYÚSCULAS)
 // =========================
 const cartaImagenes = {
   'EL LOCO':
@@ -71,7 +71,7 @@ const cartaImagenes = {
 };
 
 // =========================
-// RECORDATORIO DE INACTIVIDAD
+// RECORDATORIO DE INACTIVIDAD (30 MIN)
 // =========================
 const recordatorios = new Map(); // chatId -> timeout
 
@@ -88,58 +88,144 @@ function programarRecordatorio(bot, chatId) {
           'Si deseas otra lectura o ritual, solo escríbeme 🌙💚'
       )
       .catch((err) => console.error('Error enviando recordatorio:', err.message));
-  }, 30 * 60 * 1000); // 30 minutos
+  }, 30 * 60 * 1000);
 
   recordatorios.set(chatId, timeout);
 }
 
 // =========================
-// ENVIAR TEXTO (DIVIDIDO SI ES LARGO)
+// FIDELIZACIÓN ESPIRITUAL (PREMIUM + REGALO MÍSTICO)
 // =========================
-async function enviarTexto(bot, texto, chatId) {
-  if (!texto || typeof texto !== 'string') return;
+const fidelizacion = new Map(); // chatId -> { lastPremiumAt, checkTimeout, giftTimeout }
 
-  const limpio = texto.trim();
-  if (!limpio) return;
+function generarRegaloMistico() {
+  // Pequeño pool de regalos posibles
+  const opciones = [
+    () =>
+      'Regalo místico ✨\n\n' +
+      'Toma una respiración profunda y suave.\n' +
+      'Repite internamente:\n' +
+      '“Me permito recibir luz, guía y amor en este momento”.\n\n' +
+      'Siente cómo tu pecho se expande un poco más cada vez que inhalas.\n' +
+      'Estoy aquí contigo, cuando desees seguir explorando tu camino, mi luz.',
 
-  const partes = dividirMensaje(limpio);
-  for (const parte of partes) {
-    await bot.sendMessage(chatId, parte, { parse_mode: 'Markdown' });
-  }
+    () =>
+      'Regalo místico ✨\n\n' +
+      'Siento en tu energía una invitación a soltar una pequeña carga.\n' +
+      'Puedes escribir en un papel aquello que ya no deseas cargar y, con cuidado, romperlo en pequeños trozos mientras respiras profundo.\n\n' +
+      'Mientras lo haces, repite:\n' +
+      '“Libero con amor aquello que ya no vibra conmigo”.\n\n' +
+      'Cuando tu alma lo sienta, podemos abrir otra puerta juntos, mi luz.',
+
+    () =>
+      'Regalo místico ✨\n\n' +
+      'Si tienes una vela en casa, enciéndela con intención consciente.\n' +
+      'Mientras la llama se estabiliza, piensa en una sola cosa que desees sanar o iluminar.\n\n' +
+      'Dile en silencio:\n' +
+      '“Luz, acompáñame en este proceso”.\n\n' +
+      'Estoy aquí para seguir leyendo las señales contigo cuando tu corazón lo sienta.',
+
+    () => {
+      // Carta energética extra aleatoria usando el mazo
+      const nombres = Object.keys(cartaImagenes);
+      const indice = Math.floor(Math.random() * nombres.length);
+      const carta = nombres[indice]; // ya viene en MAYÚSCULAS
+
+      return (
+        '✨ CARTA REGALO: ' +
+        carta +
+        '\n' +
+        '[IMAGEN: ' +
+        carta +
+        ']\n\n' +
+        'Esta carta llega como un susurro extra para tu camino.\n' +
+        'Obsérvala como un símbolo, no como un mandato. ' +
+        'Permite que su energía te acompañe de forma suave y amorosa.\n\n' +
+        'Si tu alma desea seguir profundizando, estoy aquí contigo.'
+      );
+    }
+  ];
+
+  const idx = Math.floor(Math.random() * opciones.length);
+  return opciones[idx]();
+}
+
+function marcarPremium(bot, chatId) {
+  const ahora = Date.now();
+  const dataAnterior = fidelizacion.get(chatId) || {};
+
+  if (dataAnterior.checkTimeout) clearTimeout(dataAnterior.checkTimeout);
+  if (dataAnterior.giftTimeout) clearTimeout(dataAnterior.giftTimeout);
+
+  // Check-in suave después de 6 horas
+  const checkTimeout = setTimeout(() => {
+    const data = fidelizacion.get(chatId);
+    if (!data || data.lastPremiumAt !== ahora) return;
+
+    bot
+      .sendMessage(
+        chatId,
+        'He seguido sintiendo tu energía desde nuestra última lectura ✨\n' +
+          'Si deseas profundizar en lo que vimos o abrir una nueva pregunta, estoy aquí contigo, cuando tu alma lo sienta.'
+      )
+      .catch((err) => console.error('Error enviando check-in de fidelización:', err.message));
+  }, 6 * 60 * 60 * 1000);
+
+  // Regalo místico después de 24 horas
+  const giftTimeout = setTimeout(() => {
+    const data = fidelizacion.get(chatId);
+    if (!data || data.lastPremiumAt !== ahora) return;
+
+    const regalo = generarRegaloMistico();
+
+    // Usamos la misma función que procesa [IMAGEN: ...]
+    procesarYEnviarMensaje(bot, regalo, chatId).catch((err) =>
+      console.error('Error enviando regalo místico:', err.message)
+    );
+  }, 24 * 60 * 60 * 1000);
+
+  fidelizacion.set(chatId, {
+    lastPremiumAt: ahora,
+    checkTimeout,
+    giftTimeout
+  });
 }
 
 // =========================
-// PROCESAR MENSAJE: TEXTO + [IMAGEN: ...] EN ORDEN
+// PROCESAR MENSAJE: IMAGEN + TEXTO
 // =========================
 async function procesarYEnviarMensaje(bot, message, chatId) {
   if (!message || typeof message !== 'string') return;
 
-  const regex = /\[IMAGEN:\s*(.*?)\s*\]/gi;
-  let lastIndex = 0;
-  let match;
+  let texto = message;
 
-  while ((match = regex.exec(message)) !== null) {
-    const beforeText = message.slice(lastIndex, match.index);
-    await enviarTexto(bot, beforeText, chatId);
+  // Detectar UNA etiqueta [IMAGEN: ...]
+  const match = message.match(/\[IMAGEN:\s*(.*?)\s*\]/i);
 
+  if (match) {
     const nombreCartaRaw = match[1].trim().toUpperCase();
-    const urlCarta = cartaImagenes[nombreCartaRaw];
 
-    if (urlCarta) {
+    if (cartaImagenes[nombreCartaRaw]) {
       try {
-        await bot.sendPhoto(chatId, urlCarta);
+        await bot.sendPhoto(chatId, cartaImagenes[nombreCartaRaw]);
       } catch (err) {
-        console.error('Error enviando imagen de carta:', nombreCartaRaw, err.message);
+        console.error('Error enviando imagen de carta:', err.message);
       }
-    } else {
-      console.warn('Carta no encontrada en mapa:', nombreCartaRaw);
     }
 
-    lastIndex = regex.lastIndex;
+    // Eliminamos la etiqueta del texto
+    texto = message.replace(match[0], '').trim();
   }
 
-  const remainingText = message.slice(lastIndex);
-  await enviarTexto(bot, remainingText, chatId);
+  if (texto.length > 0) {
+    const partes = dividirMensaje(texto);
+
+    for (const parte of partes) {
+      await bot.sendMessage(chatId, parte, {
+        parse_mode: 'Markdown'
+      });
+    }
+  }
 }
 
 // =========================
@@ -198,19 +284,24 @@ async function sendToVoiceflow(userId, text) {
 async function handleVoiceflowTraces(chatId, traces) {
   for (const trace of traces) {
     try {
-      if (trace.type === 'text') {
-        const message = trace.payload?.message;
-        if (message) {
-          await procesarYEnviarMensaje(bot, message, chatId);
-        }
-      } else if (trace.type === 'speak') {
-        const message = trace.payload?.message;
-        if (message) {
+      if (trace.type === 'text' || trace.type === 'speak') {
+        let message = trace.payload?.message;
+
+        if (message && typeof message === 'string') {
+          // Detectamos si termina en [PREMIUM_COMPLETADO]
+          const tienePremiumTag = message.includes('[PREMIUM_COMPLETADO]');
+
+          if (tienePremiumTag) {
+            message = message.replace('[PREMIUM_COMPLETADO]', '').trim();
+            marcarPremium(bot, chatId);
+          }
+
           await procesarYEnviarMensaje(bot, message, chatId);
         }
       } else if (trace.type === 'end') {
-        // Mensaje de cierre opcional
-        // await bot.sendMessage(chatId, '🌙 Gracias por conectar con Luna Esmeralda. Vuelve cuando lo sientas.');
+        // Si quieres, puedes mandar algo aquí, pero por ahora no cerramos conversación.
+        // Ejemplo (comentado):
+        // await bot.sendMessage(chatId, 'Cuando tu energía lo sienta, podemos seguir explorando juntos 🌙💚');
       }
     } catch (err) {
       console.error('Error enviando mensaje a Telegram:', err.message);
@@ -225,7 +316,7 @@ bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
   const userId = String(chatId);
 
-  // Reprogramar recordatorio cada vez que habla el usuario
+  // Reprogramar recordatorio de inactividad cada vez que habla
   programarRecordatorio(bot, chatId);
 
   let userText = '';
@@ -258,7 +349,7 @@ bot.on('message', async (msg) => {
   } catch (error) {
     await bot.sendMessage(
       chatId,
-      '✨ Mi luz, algo no funcionó bien al conectar con mi energía. Intenta de nuevo en un momento por favor 🌙💚'
+      '✨ Mi luz, algo no funcionó bien al conectar con mi energía. Intenta de nuevo en un momento, estoy aquí contigo. 🌙💚'
     );
   }
 });
