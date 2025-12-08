@@ -21,7 +21,7 @@ function dividirMensaje(texto) {
 }
 
 // =========================
-// MAPA DE CARTAS -> URL DE IMAGEN (MAYÚSCULAS)
+// MAPA DE CARTAS -> URL DE IMAGEN (NOMBRES EN MAYÚSCULAS)
 // =========================
 const cartaImagenes = {
   'EL LOCO':
@@ -71,7 +71,7 @@ const cartaImagenes = {
 };
 
 // =========================
-// RECORDATORIO DE INACTIVIDAD (30 MIN)
+// RECORDATORIO DE INACTIVIDAD
 // =========================
 const recordatorios = new Map(); // chatId -> timeout
 
@@ -84,7 +84,8 @@ function programarRecordatorio(bot, chatId) {
     bot
       .sendMessage(
         chatId,
-        'Mi luz ✨, sigo aquí cuando tu alma lo necesite. Si deseas otra lectura o ritual, solo escríbeme 🌙💚'
+        'Mi luz ✨, sigo aquí cuando tu alma lo necesite. ' +
+          'Si deseas otra lectura o ritual, solo escríbeme 🌙💚'
       )
       .catch((err) => console.error('Error enviando recordatorio:', err.message));
   }, 30 * 60 * 1000); // 30 minutos
@@ -93,67 +94,52 @@ function programarRecordatorio(bot, chatId) {
 }
 
 // =========================
-// PROCESAR MENSAJE: IMAGENES + RENOVACION + TEXTO
+// ENVIAR TEXTO (DIVIDIDO SI ES LARGO)
 // =========================
-//
-// - Envía TODAS las cartas [IMAGEN: ...] como fotos
-// - Maneja una etiqueta especial [RENOVACION_SUSCRIPCION]
-// - Luego envía el texto sin etiquetas, dividido en partes si es largo
-//
+async function enviarTexto(bot, texto, chatId) {
+  if (!texto || typeof texto !== 'string') return;
+
+  const limpio = texto.trim();
+  if (!limpio) return;
+
+  const partes = dividirMensaje(limpio);
+  for (const parte of partes) {
+    await bot.sendMessage(chatId, parte, { parse_mode: 'Markdown' });
+  }
+}
+
+// =========================
+// PROCESAR MENSAJE: TEXTO + [IMAGEN: ...] EN ORDEN
+// =========================
 async function procesarYEnviarMensaje(bot, message, chatId) {
   if (!message || typeof message !== 'string') return;
 
-  let texto = message;
-
-  // 1) Mensaje estándar de renovación si aparece la etiqueta
-  if (texto.includes('[RENOVACION_SUSCRIPCION]')) {
-    const renovacionTexto =
-      'Alma hermosa ✨\n\n' +
-      'Veo que tu **Suscripción Mensual Luna Esmeralda** está por finalizar pronto.\n\n' +
-      'Si deseas seguir recibiendo cada mes:\n' +
-      '🌕 Una Lectura mensual completa\n' +
-      '💞 Una Lectura del amor o financiera\n' +
-      '🌙 Un Ritual personalizado premium\n' +
-      '✨ Un Mensaje de tu guía espiritual\n\n' +
-      'Puedes renovar tu suscripción en los enlaces de pago que ya te compartí.\n' +
-      'Cuando realices tu aporte, envíame tu comprobante y activarė tu próximo mes de guía con todo mi amor. 🌙💚';
-
-    // Quitamos la etiqueta del texto original
-    texto = texto.replace('[RENOVACION_SUSCRIPCION]', '').trim();
-
-    await bot.sendMessage(chatId, renovacionTexto, { parse_mode: 'Markdown' });
-  }
-
-  // 2) Enviar TODAS las cartas que aparezcan como [IMAGEN: NOMBRE]
-  const imagenRegex = /\[IMAGEN:\s*(.*?)\s*\]/gi;
+  const regex = /\[IMAGEN:\s*(.*?)\s*\]/gi;
+  let lastIndex = 0;
   let match;
 
-  while ((match = imagenRegex.exec(texto)) !== null) {
+  while ((match = regex.exec(message)) !== null) {
+    const beforeText = message.slice(lastIndex, match.index);
+    await enviarTexto(bot, beforeText, chatId);
+
     const nombreCartaRaw = match[1].trim().toUpperCase();
-    const url = cartaImagenes[nombreCartaRaw];
+    const urlCarta = cartaImagenes[nombreCartaRaw];
 
-    if (url) {
+    if (urlCarta) {
       try {
-        await bot.sendPhoto(chatId, url);
+        await bot.sendPhoto(chatId, urlCarta);
       } catch (err) {
-        console.error('Error enviando imagen de carta:', err.message);
+        console.error('Error enviando imagen de carta:', nombreCartaRaw, err.message);
       }
+    } else {
+      console.warn('Carta no encontrada en mapa:', nombreCartaRaw);
     }
+
+    lastIndex = regex.lastIndex;
   }
 
-  // Quitamos TODAS las etiquetas [IMAGEN: ...] del texto antes de enviarlo
-  texto = texto.replace(imagenRegex, '').trim();
-
-  // 3) Enviar el resto del texto (si queda algo)
-  if (texto.length > 0) {
-    const partes = dividirMensaje(texto);
-
-    for (const parte of partes) {
-      await bot.sendMessage(chatId, parte, {
-        parse_mode: 'Markdown'
-      });
-    }
-  }
+  const remainingText = message.slice(lastIndex);
+  await enviarTexto(bot, remainingText, chatId);
 }
 
 // =========================
@@ -223,7 +209,7 @@ async function handleVoiceflowTraces(chatId, traces) {
           await procesarYEnviarMensaje(bot, message, chatId);
         }
       } else if (trace.type === 'end') {
-        // Opcional: mensaje de cierre
+        // Mensaje de cierre opcional
         // await bot.sendMessage(chatId, '🌙 Gracias por conectar con Luna Esmeralda. Vuelve cuando lo sientas.');
       }
     } catch (err) {
@@ -239,7 +225,7 @@ bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
   const userId = String(chatId);
 
-  // Reprogramamos recordatorio de inactividad
+  // Reprogramar recordatorio cada vez que habla el usuario
   programarRecordatorio(bot, chatId);
 
   let userText = '';
